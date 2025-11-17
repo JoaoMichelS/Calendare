@@ -14,6 +14,8 @@ import {
   IconButton,
   FormControlLabel,
   Switch,
+  useTheme,
+  useMediaQuery,
 } from '@mui/material';
 import { Close as CloseIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import type { Event, CreateEventData, UpdateEventData } from '../../types/event';
@@ -47,6 +49,8 @@ export default function EventModal({
   onUpdate,
   onDelete,
 }: EventModalProps) {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const isEdit = !!event;
 
   const {
@@ -132,7 +136,13 @@ export default function EventModal({
   };
 
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
+    <Dialog
+      open={open}
+      onClose={handleClose}
+      maxWidth="sm"
+      fullWidth
+      fullScreen={isMobile}
+    >
       <DialogTitle>
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           {isEdit ? 'Editar Evento' : 'Novo Evento'}
@@ -162,7 +172,7 @@ export default function EventModal({
               />
             </Grid>
 
-            <Grid item xs={12} sm={6}>
+            <Grid item xs={12}>
               <Controller
                 name="startDate"
                 control={control}
@@ -180,7 +190,7 @@ export default function EventModal({
               />
             </Grid>
 
-            <Grid item xs={12} sm={6}>
+            <Grid item xs={12}>
               <Controller
                 name="endDate"
                 control={control}

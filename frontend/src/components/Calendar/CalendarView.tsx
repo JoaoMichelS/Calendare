@@ -1,4 +1,4 @@
-import { Box } from '@mui/material';
+import { Box, useTheme, useMediaQuery } from '@mui/material';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
@@ -19,6 +19,10 @@ export default function CalendarView({
   onEventClick,
   onDatesSet,
 }: CalendarViewProps) {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm')); // < 600px
+  const isTablet = useMediaQuery(theme.breakpoints.between('sm', 'md')); // 600px - 900px
+
   const calendarEvents = events.map((event) => ({
     id: event.id.toString(),
     title: event.title,
@@ -29,20 +33,85 @@ export default function CalendarView({
     extendedProps: event,
   }));
 
+  // Configurações responsivas
+  const getHeaderToolbar = () => {
+    if (isMobile) {
+      return {
+        start: 'title',
+        center: '',
+        end: '',
+      };
+    }
+    if (isTablet) {
+      return {
+        left: 'prev,next today',
+        center: 'title',
+        right: 'dayGridMonth,timeGridWeek',
+      };
+    }
+    return {
+      left: 'prev,next today',
+      center: 'title',
+      right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek',
+    };
+  };
+
+  const getFooterToolbar = () => {
+    if (isMobile) {
+      return {
+        start: 'prev,next',
+        center: '',
+        end: 'listWeek,dayGridMonth',
+      };
+    }
+    return false;
+  };
+
+  const getInitialView = () => {
+    if (isMobile) return 'listWeek';
+    if (isTablet) return 'dayGridMonth';
+    return 'timeGridWeek';
+  };
+
+  const getHeight = () => {
+    if (isMobile) return 'auto';
+    if (isTablet) return '600px';
+    return '700px';
+  };
+
+  const getTitleFormat = () => {
+    if (isMobile) {
+      return { month: 'short', day: 'numeric' };
+    }
+    return undefined;
+  };
+
   return (
-    <Box sx={{ minHeight: '600px', width: '100%' }}>
+    <Box
+      sx={{
+        minHeight: isMobile ? 'auto' : '600px',
+        width: '100%',
+        // Ocultar datas da lista no mobile
+        ...(isMobile && {
+          '& .fc-list-day-cushion': {
+            display: 'none',
+          },
+          '& .fc-list-day': {
+            backgroundColor: 'transparent',
+          },
+        }),
+      }}
+    >
       <FullCalendar
         plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, listPlugin]}
-        headerToolbar={{
-          left: 'prev,next today',
-          center: 'title',
-          right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek',
-        }}
-        initialView="timeGridWeek"
+        headerToolbar={getHeaderToolbar()}
+        footerToolbar={getFooterToolbar()}
+        titleFormat={getTitleFormat()}
+        initialView={getInitialView()}
         editable={true}
         selectable={true}
         selectMirror={true}
-        dayMaxEvents={true}
+        dayMaxEvents={isMobile ? 2 : true}
         weekends={true}
         events={calendarEvents}
         select={(info) => {
@@ -57,12 +126,19 @@ export default function CalendarView({
         datesSet={(info) => {
           onDatesSet({ start: info.start, end: info.end });
         }}
-        height="700px"
+        height={getHeight()}
         locale="pt-br"
         firstDay={0}
         slotMinTime="06:00:00"
         slotMaxTime="23:00:00"
         allDaySlot={true}
+        nowIndicator={true}
+        navLinks={!isMobile}
+        eventTimeFormat={{
+          hour: '2-digit',
+          minute: '2-digit',
+          meridiem: false,
+        }}
       />
     </Box>
   );

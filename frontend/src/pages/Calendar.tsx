@@ -1,11 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Container, Box, Paper, Typography, CircularProgress, Alert, Snackbar } from '@mui/material';
+import { Container, Box, Paper, Typography, CircularProgress, Alert, Snackbar, useTheme, useMediaQuery } from '@mui/material';
 import CalendarView from '../components/Calendar/CalendarView';
 import EventModal from '../components/Calendar/EventModal';
 import { eventsApi } from '../services/events.api';
 import type { Event, CreateEventData, UpdateEventData } from '../types/event';
 
 export default function Calendar() {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+
   const [events, setEvents] = useState<Event[]>([]);
   const [initialLoading, setInitialLoading] = useState(true);
   const [error, setError] = useState('');
@@ -83,14 +86,28 @@ export default function Calendar() {
   };
 
   return (
-    <Container maxWidth="xl" sx={{ mt: 4, mb: 4 }}>
-      <Paper elevation={3} sx={{ p: 3 }}>
-        <Typography variant="h4" gutterBottom sx={{ mb: 3 }}>
+    <Container
+      maxWidth="lg"
+      sx={{
+        mt: isMobile ? 2 : 4,
+        mb: isMobile ? 2 : 4,
+        px: isMobile ? 1 : 3,
+      }}
+    >
+      <Paper
+        elevation={isMobile ? 1 : 3}
+        sx={{ p: isMobile ? 2 : 3 }}
+      >
+        <Typography
+          variant={isMobile ? "h5" : "h4"}
+          gutterBottom
+          sx={{ mb: isMobile ? 2 : 3 }}
+        >
           Minha Agenda
         </Typography>
 
         {initialLoading ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: isMobile ? 4 : 8 }}>
             <CircularProgress />
           </Box>
         ) : (
