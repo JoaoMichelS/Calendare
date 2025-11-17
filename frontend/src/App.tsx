@@ -1,60 +1,53 @@
-import { useState, useEffect } from 'react'
-import './App.css'
-import axios from 'axios'
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { CssBaseline, ThemeProvider, createTheme } from '@mui/material';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import Navbar from './components/Navbar';
+import ProtectedRoute from './components/ProtectedRoute';
+import Login from './pages/Login';
+import Register from './pages/Register';
+import Dashboard from './pages/Dashboard';
 
-function App() {
-  const [message, setMessage] = useState<string>('')
-  const [health, setHealth] = useState<any>(null)
-  const [loading, setLoading] = useState<boolean>(true)
+const theme = createTheme({
+  palette: {
+    primary: {
+      main: '#667eea',
+    },
+    secondary: {
+      main: '#764ba2',
+    },
+  },
+});
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        // Testar conexão com o backend
-        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001'
-
-        const [msgResponse, healthResponse] = await Promise.all([
-          axios.get(`${apiUrl}/`),
-          axios.get(`${apiUrl}/health`)
-        ])
-
-        setMessage(msgResponse.data)
-        setHealth(healthResponse.data)
-      } catch (error) {
-        console.error('Erro ao conectar com o backend:', error)
-        setMessage('Erro ao conectar com o backend')
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchData()
-  }, [])
-
-  return (
-    <div className="App">
-      <header className="App-header">
-        <h1>Calendare</h1>
-        <p>Frontend React + TypeScript</p>
-
-        {loading ? (
-          <p>Carregando...</p>
-        ) : (
-          <div className="backend-status">
-            <h2>Status do Backend:</h2>
-            <p>{message}</p>
-            {health && (
-              <div className="health-info">
-                <p>Status: {health.status}</p>
-                <p>Serviço: {health.service}</p>
-                <p>Timestamp: {new Date(health.timestamp).toLocaleString()}</p>
-              </div>
-            )}
-          </div>
-        )}
-      </header>
-    </div>
-  )
+function HomeRedirect() {
+  const { isAuthenticated } = useAuth();
+  return isAuthenticated ? <Navigate to="/dashboard" replace /> : <Navigate to="/login" replace />;
 }
 
-export default App
+function App() {
+  return (
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <AuthProvider>
+        <Router>
+          <Navbar />
+          <Routes>
+            <Route path="/" element={<HomeRedirect />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute>
+                  <Dashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </Router>
+      </AuthProvider>
+    </ThemeProvider>
+  );
+}
+
+export default App;

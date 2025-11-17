@@ -36,6 +36,8 @@ services:
       - PORT=3001
       - DATABASE_URL=postgresql://calendare:calendare123@postgres:5432/calendare_db?schema=public
       - FRONTEND_URL=http://localhost:3000
+      - JWT_SECRET=calendare-123
+      - JWT_EXPIRATION=7d
     volumes:
       - ./backend/src:/app/src
       - ./backend/prisma:/app/prisma
