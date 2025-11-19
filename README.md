@@ -205,4 +205,4 @@ A aplicação expõe uma API RESTful completa. Criei uma collection no postman c
 
 ## Screenshots
 
-![Overview do sistema](./overview.png)
+![Overview do sistema](./Overview.png)
