@@ -1,3 +1,4 @@
+import { forwardRef } from 'react';
 import { Box, useTheme, useMediaQuery } from '@mui/material';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
@@ -15,14 +16,14 @@ interface CalendarViewProps {
   currentUserId?: number;
 }
 
-export default function CalendarView({
+const CalendarView = forwardRef(({
   events,
   onDateSelect,
   onEventClick,
   onDatesSet,
   onEventChange,
   currentUserId,
-}: CalendarViewProps) {
+}: CalendarViewProps, ref: any) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm')); // < 600px
   const isTablet = useMediaQuery(theme.breakpoints.between('sm', 'md')); // 600px - 900px
@@ -118,6 +119,7 @@ export default function CalendarView({
       }}
     >
       <FullCalendar
+        ref={ref}
         plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, listPlugin]}
         headerToolbar={getHeaderToolbar()}
         footerToolbar={getFooterToolbar()}
@@ -171,4 +173,8 @@ export default function CalendarView({
       />
     </Box>
   );
-}
+});
+
+CalendarView.displayName = 'CalendarView';
+
+export default CalendarView;

@@ -91,87 +91,109 @@ export default function PendingInvites({ onInviteResponded }: PendingInvitesProp
 
   if (loading) {
     return (
-      <Box display="flex" justifyContent="center" p={3}>
-        <CircularProgress />
+      <Box display="flex" justifyContent="center" py={4}>
+        <CircularProgress size={24} />
       </Box>
     );
   }
 
   if (invites.length === 0) {
     return (
-      <Alert severity="info" sx={{ m: 2 }}>
-        Você não tem convites pendentes
-      </Alert>
+      <Typography variant="body2" color="text.secondary" textAlign="center" py={2}>
+        Nenhum convite pendente
+      </Typography>
     );
   }
 
   return (
-    <Box p={2}>
-      <Typography variant="h6" gutterBottom>
-        Convites Pendentes ({invites.length})
-      </Typography>
-
+    <Box>
       {error && (
         <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
           {error}
         </Alert>
       )}
 
-      <Stack spacing={2}>
-        {invites.map((invite) => (
-          <Card key={invite.id} variant="outlined">
-            <CardContent>
-              <Stack spacing={2}>
-                <Box>
-                  <Typography variant="h6" component="div">
-                    {invite.event.title}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Convidado por: {invite.event.user.name || invite.event.user.email}
-                  </Typography>
-                </Box>
+      <Box
+        sx={{
+          maxHeight: invites.length > 4 ? '743px' : 'auto',
+          overflowY: invites.length > 4 ? 'auto' : 'visible',
+          pr: invites.length > 4 ? 1 : 0,
+          '&::-webkit-scrollbar': {
+            width: '8px',
+          },
+          '&::-webkit-scrollbar-track': {
+            bgcolor: 'transparent',
+          },
+          '&::-webkit-scrollbar-thumb': {
+            bgcolor: 'rgba(0,0,0,0.2)',
+            borderRadius: '4px',
+            '&:hover': {
+              bgcolor: 'rgba(0,0,0,0.3)',
+            },
+          },
+        }}
+      >
+        <Stack spacing={2}>
+          {invites.map((invite) => (
+            <Card key={invite.id} variant="outlined" sx={{ bgcolor: 'background.default' }}>
+              <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+                <Stack spacing={1.5}>
+                  <Box>
+                    <Typography variant="subtitle2" fontWeight={600} gutterBottom>
+                      {invite.event.title}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" display="block">
+                      Por: {invite.event.user.name || invite.event.user.email}
+                    </Typography>
+                  </Box>
 
-                <Box>
-                  <Typography variant="body2" color="text.secondary">
-                    Início: {formatDate(invite.event.startDate)}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Fim: {formatDate(invite.event.endDate)}
-                  </Typography>
-                </Box>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary" display="block">
+                      {formatDate(invite.event.startDate)}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary" display="block">
+                      até {formatDate(invite.event.endDate)}
+                    </Typography>
+                  </Box>
 
-                {invite.canEdit && (
-                  <Chip
-                    label="Você poderá editar este evento"
-                    color="primary"
-                    size="small"
-                    sx={{ width: 'fit-content' }}
-                  />
-                )}
+                  {invite.canEdit && (
+                    <Chip
+                      label="Pode editar"
+                      color="primary"
+                      size="small"
+                      variant="outlined"
+                      sx={{ width: 'fit-content' }}
+                    />
+                  )}
 
-                <Stack direction="row" spacing={2}>
-                  <Button
-                    variant="contained"
-                    color="success"
-                    onClick={() => handleRespond(invite.eventId, 'ACCEPTED')}
-                    disabled={processingInvite === invite.eventId}
-                  >
-                    {processingInvite === invite.eventId ? 'Aceitando...' : 'Aceitar'}
-                  </Button>
-                  <Button
-                    variant="outlined"
-                    color="error"
-                    onClick={() => handleRespond(invite.eventId, 'DECLINED')}
-                    disabled={processingInvite === invite.eventId}
-                  >
-                    {processingInvite === invite.eventId ? 'Recusando...' : 'Recusar'}
-                  </Button>
+                  <Stack direction="row" spacing={1}>
+                    <Button
+                      variant="contained"
+                      color="success"
+                      size="small"
+                      fullWidth
+                      onClick={() => handleRespond(invite.eventId, 'ACCEPTED')}
+                      disabled={processingInvite === invite.eventId}
+                    >
+                      {processingInvite === invite.eventId ? '...' : 'Aceitar'}
+                    </Button>
+                    <Button
+                      variant="outlined"
+                      color="error"
+                      size="small"
+                      fullWidth
+                      onClick={() => handleRespond(invite.eventId, 'DECLINED')}
+                      disabled={processingInvite === invite.eventId}
+                    >
+                      {processingInvite === invite.eventId ? '...' : 'Recusar'}
+                    </Button>
+                  </Stack>
                 </Stack>
-              </Stack>
-            </CardContent>
-          </Card>
-        ))}
-      </Stack>
+              </CardContent>
+            </Card>
+          ))}
+        </Stack>
+      </Box>
     </Box>
   );
 }

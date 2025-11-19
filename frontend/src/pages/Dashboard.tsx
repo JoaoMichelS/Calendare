@@ -88,21 +88,6 @@ export default function Dashboard() {
             </Box>
           </Box>
         </Box>
-
-        <Box
-          sx={{
-            mt: 4,
-            p: 3,
-            bgcolor: 'background.default',
-            borderRadius: 2,
-            width: '100%',
-          }}
-        >
-          <Typography variant="body2" color="text.secondary" align="center">
-            Esta é sua área logada. Em breve você poderá gerenciar seus eventos
-            e compromissos aqui!
-          </Typography>
-        </Box>
       </Paper>
     </Container>
   );
