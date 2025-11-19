@@ -116,7 +116,7 @@ cp .env.example .env
 cd ..
 
 # Inicie todos os serviços
-docker-compose up -d
+docker compose up -d
 ```
 
 Aguarde alguns minutos para que todos os serviços sejam inicializados.
@@ -124,7 +124,7 @@ Aguarde alguns minutos para que todos os serviços sejam inicializados.
 ### 4. Execute as migrações do banco de dados
 
 ```bash
-docker-compose exec backend npm run prisma:migrate
+docker compose exec backend npm run prisma:migrate
 ```
 
 ### 5. Acesse a aplicação
@@ -176,19 +176,19 @@ Calendare/
 
 ```bash
 # Iniciar todos os serviços
-docker-compose up -d
+docker compose up -d
 
 # Parar todos os serviços
-docker-compose down
+docker compose down
 
 # Ver logs de um serviço específico
-docker-compose logs -f [backend|frontend|postgres]
+docker compose logs -f [backend|frontend|postgres]
 
 # Reconstruir os containers
-docker-compose up -d --build
+docker compose up -d --build
 
 # Remover todos os containers e volumes
-docker-compose down -v
+docker compose down -v
 ```
 
 ## API Endpoints
