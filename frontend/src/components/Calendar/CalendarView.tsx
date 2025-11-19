@@ -142,11 +142,16 @@ export default function CalendarView({
         height={getHeight()}
         locale="pt-br"
         firstDay={0}
-        slotMinTime="06:00:00"
-        slotMaxTime="23:00:00"
-        allDaySlot={true}
+        allDaySlot={false}
         nowIndicator={true}
         navLinks={!isMobile}
+        buttonText={{
+          today: 'Hoje',
+          month: 'Mês',
+          week: 'Semana',
+          day: 'Dia',
+          list: 'Lista',
+        }}
         eventTimeFormat={{
           hour: '2-digit',
           minute: '2-digit',
