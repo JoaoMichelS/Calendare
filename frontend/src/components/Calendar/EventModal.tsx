@@ -17,6 +17,10 @@ import {
   useTheme,
   useMediaQuery,
   Divider,
+  MenuItem,
+  Select,
+  InputLabel,
+  FormControl,
 } from '@mui/material';
 import { Close as CloseIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import type { Event, CreateEventData, UpdateEventData } from '../../types/event';
@@ -32,6 +36,12 @@ const schema = yup.object({
   location: yup.string(),
   color: yup.string(),
   isRecurring: yup.boolean(),
+  recurrenceRule: yup.string().when('isRecurring', {
+    is: true,
+    then: (schema) => schema.required('Regra de recorrência é obrigatória'),
+    otherwise: (schema) => schema.notRequired(),
+  }),
+  recurrenceEndDate: yup.string(),
 });
 
 interface EventModalProps {
@@ -67,6 +77,7 @@ export default function EventModal({
     control,
     handleSubmit,
     reset,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm({
     resolver: yupResolver(schema),
@@ -78,8 +89,12 @@ export default function EventModal({
       location: '',
       color: '#3788d8',
       isRecurring: false,
+      recurrenceRule: 'DAILY',
+      recurrenceEndDate: '',
     },
   });
+
+  const isRecurring = watch('isRecurring');
 
   useEffect(() => {
     if (event) {
@@ -91,6 +106,8 @@ export default function EventModal({
         location: event.location || '',
         color: event.color,
         isRecurring: event.isRecurring,
+        recurrenceRule: event.recurrenceRule || 'DAILY',
+        recurrenceEndDate: event.recurrenceEndDate ? formatDateForInput(new Date(event.recurrenceEndDate)) : '',
       });
     } else if (initialDates) {
       reset({
@@ -101,6 +118,8 @@ export default function EventModal({
         location: '',
         color: '#3788d8',
         isRecurring: false,
+        recurrenceRule: 'DAILY',
+        recurrenceEndDate: '',
       });
     }
   }, [event, initialDates, reset]);
@@ -116,11 +135,53 @@ export default function EventModal({
 
   const onSubmit = async (data: any) => {
     try {
-      const eventData = {
-        ...data,
+      const eventData: any = {
+        title: data.title,
+        description: data.description,
         startDate: new Date(data.startDate).toISOString(),
         endDate: new Date(data.endDate).toISOString(),
+        location: data.location,
+        color: data.color,
+        isRecurring: data.isRecurring,
       };
+
+      // Adicionar campos de recorrência apenas se o evento for recorrente
+      if (data.isRecurring) {
+        // Converter a frequência simples para formato RRULE
+        const startDate = new Date(data.startDate);
+        const dtstart = `DTSTART:${startDate.toISOString().replace(/[-:]/g, '').split('.')[0]}Z`;
+
+        let rrule = '';
+        switch (data.recurrenceRule) {
+          case 'DAILY':
+            rrule = 'FREQ=DAILY';
+            break;
+          case 'WEEKLY':
+            rrule = 'FREQ=WEEKLY';
+            break;
+          case 'MONTHLY':
+            rrule = 'FREQ=MONTHLY';
+            break;
+          case 'YEARLY':
+            rrule = 'FREQ=YEARLY';
+            break;
+          default:
+            rrule = 'FREQ=DAILY';
+        }
+
+        // Adicionar UNTIL se houver data de fim
+        if (data.recurrenceEndDate) {
+          const untilDate = new Date(data.recurrenceEndDate);
+          const until = untilDate.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+          rrule += `;UNTIL=${until}`;
+        }
+
+        eventData.recurrenceRule = `${dtstart}\nRRULE:${rrule}`;
+
+        if (data.recurrenceEndDate) {
+          eventData.recurrenceEndDate = new Date(data.recurrenceEndDate).toISOString();
+        }
+      }
 
       if (isEdit && event) {
         await onUpdate(event.id, eventData);
@@ -278,7 +339,8 @@ export default function EventModal({
               />
             </Grid>
 
-            <Grid item xs={12} sm={6} display="flex" alignItems="center">
+            {/* Recorrência - Comentada Não Finalizada */}
+            {/* <Grid item xs={12} sm={6} display="flex" alignItems="center">
               <Controller
                 name="isRecurring"
                 control={control}
@@ -289,7 +351,52 @@ export default function EventModal({
                   />
                 )}
               />
-            </Grid>
+            </Grid> */}
+
+            {/* Configurações de Recorrência */}
+            {/* {isRecurring && (
+              <>
+                <Grid item xs={12} sm={6}>
+                  <Controller
+                    name="recurrenceRule"
+                    control={control}
+                    render={({ field }) => (
+                      <FormControl fullWidth error={!!errors.recurrenceRule}>
+                        <InputLabel>Repetir</InputLabel>
+                        <Select {...field} label="Repetir">
+                          <MenuItem value="DAILY">Diariamente</MenuItem>
+                          <MenuItem value="WEEKLY">Semanalmente</MenuItem>
+                          <MenuItem value="MONTHLY">Mensalmente</MenuItem>
+                          <MenuItem value="YEARLY">Anualmente</MenuItem>
+                        </Select>
+                        {errors.recurrenceRule && (
+                          <Box component="span" sx={{ color: 'error.main', fontSize: '0.75rem', mt: 0.5 }}>
+                            {errors.recurrenceRule.message}
+                          </Box>
+                        )}
+                      </FormControl>
+                    )}
+                  />
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
+                  <Controller
+                    name="recurrenceEndDate"
+                    control={control}
+                    render={({ field }) => (
+                      <TextField
+                        {...field}
+                        label="Termina em (Opcional)"
+                        type="date"
+                        fullWidth
+                        InputLabelProps={{ shrink: true }}
+                        helperText="Deixe em branco para sem fim"
+                      />
+                    )}
+                  />
+                </Grid>
+              </>
+            )} */}
 
             {/* Convites - Apenas na Criação */}
             {!isEdit && (
