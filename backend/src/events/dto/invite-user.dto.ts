@@ -1,8 +1,12 @@
-import { IsInt, IsArray, ArrayMinSize } from 'class-validator';
+import { IsArray, ArrayMinSize, IsBoolean, IsOptional, IsEmail } from 'class-validator';
 
 export class InviteUserDto {
   @IsArray()
-  @IsInt({ each: true, message: 'IDs de usuários devem ser números' })
+  @IsEmail({}, { each: true, message: 'Emails devem ser válidos' })
   @ArrayMinSize(1, { message: 'Deve convidar pelo menos um usuário' })
-  userIds: number[];
+  emails: string[];
+
+  @IsOptional()
+  @IsBoolean({ message: 'canEdit deve ser um valor booleano' })
+  canEdit?: boolean;
 }

@@ -9,6 +9,8 @@ import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
 import { EventFilterDto } from './dto/event-filter.dto';
 import { InviteUserDto } from './dto/invite-user.dto';
+import { RespondToInviteDto } from './dto/respond-invite.dto';
+import { InviteStatus } from '@prisma/client';
 import { RRule } from 'rrule';
 
 @Injectable()
@@ -190,13 +192,22 @@ export class EventsService {
   async update(id: number, userId: number, updateEventDto: UpdateEventDto) {
     const event = await this.prisma.event.findUnique({
       where: { id },
+      include: {
+        invites: {
+          where: { userId },
+          select: { canEdit: true },
+        },
+      },
     });
 
     if (!event) {
       throw new NotFoundException('Evento não encontrado');
     }
 
-    if (event.userId !== userId) {
+    const isOwner = event.userId === userId;
+    const canEdit = event.invites.length > 0 && event.invites[0].canEdit;
+
+    if (!isOwner && !canEdit) {
       throw new ForbiddenException('Você não tem permissão para editar este evento');
     }
 
@@ -279,21 +290,45 @@ export class EventsService {
       throw new ForbiddenException('Apenas o criador do evento pode convidar usuários');
     }
 
+    const canEdit = inviteUserDto.canEdit || false;
+
+    // Validar que os usuários existem (buscar por email)
+    const users = await this.prisma.user.findMany({
+      where: {
+        email: {
+          in: inviteUserDto.emails,
+        },
+      },
+      select: { id: true, email: true },
+    });
+
+    const foundEmails = users.map((u) => u.email);
+    const missingEmails = inviteUserDto.emails.filter((email) => !foundEmails.includes(email));
+
+    if (missingEmails.length > 0) {
+      throw new BadRequestException(`Usuários não encontrados: ${missingEmails.join(', ')}`);
+    }
+
     // Criar convites em lote
     const invites = await Promise.all(
-      inviteUserDto.userIds.map((invitedUserId) =>
+      users.map((user) =>
         this.prisma.eventInvite.upsert({
           where: {
             eventId_userId: {
               eventId,
-              userId: invitedUserId,
+              userId: user.id,
             },
           },
           create: {
             eventId,
-            userId: invitedUserId,
+            userId: user.id,
+            canEdit,
+            status: InviteStatus.PENDING,
           },
-          update: {},
+          update: {
+            canEdit,
+            status: InviteStatus.PENDING,
+          },
           include: {
             user: {
               select: {
@@ -331,6 +366,127 @@ export class EventsService {
         },
       },
     });
+  }
+
+  async respondToInvite(eventId: number, userId: number, respondDto: RespondToInviteDto) {
+    // Verificar se o convite existe
+    const invite = await this.prisma.eventInvite.findUnique({
+      where: {
+        eventId_userId: {
+          eventId,
+          userId,
+        },
+      },
+      include: {
+        event: {
+          select: {
+            id: true,
+            title: true,
+            startDate: true,
+            endDate: true,
+          },
+        },
+      },
+    });
+
+    if (!invite) {
+      throw new NotFoundException('Convite não encontrado');
+    }
+
+    // Atualizar status do convite
+    const updatedInvite = await this.prisma.eventInvite.update({
+      where: {
+        eventId_userId: {
+          eventId,
+          userId,
+        },
+      },
+      data: {
+        status: respondDto.status,
+      },
+      include: {
+        event: {
+          select: {
+            id: true,
+            title: true,
+            startDate: true,
+            endDate: true,
+          },
+        },
+        user: {
+          select: {
+            id: true,
+            email: true,
+            name: true,
+          },
+        },
+      },
+    });
+
+    return updatedInvite;
+  }
+
+  async getPendingInvites(userId: number) {
+    const invites = await this.prisma.eventInvite.findMany({
+      where: {
+        userId,
+        status: InviteStatus.PENDING,
+      },
+      include: {
+        event: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                email: true,
+                name: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    return invites;
+  }
+
+  async getEventInvites(eventId: number, userId: number) {
+    // Verificar se o usuário é o criador do evento
+    const event = await this.prisma.event.findUnique({
+      where: { id: eventId },
+    });
+
+    if (!event) {
+      throw new NotFoundException('Evento não encontrado');
+    }
+
+    if (event.userId !== userId) {
+      throw new ForbiddenException('Apenas o criador do evento pode visualizar a lista de convites');
+    }
+
+    // Buscar todos os convites do evento
+    const invites = await this.prisma.eventInvite.findMany({
+      where: {
+        eventId,
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+            name: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    return invites;
   }
 
   // Método auxiliar para expandir eventos recorrentes

@@ -11,6 +11,7 @@ interface CalendarViewProps {
   onDateSelect: (start: Date, end: Date) => void;
   onEventClick: (event: Event) => void;
   onDatesSet: (info: { start: Date; end: Date }) => void;
+  currentUserId?: number;
 }
 
 export default function CalendarView({
@@ -18,20 +19,32 @@ export default function CalendarView({
   onDateSelect,
   onEventClick,
   onDatesSet,
+  currentUserId,
 }: CalendarViewProps) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm')); // < 600px
   const isTablet = useMediaQuery(theme.breakpoints.between('sm', 'md')); // 600px - 900px
 
-  const calendarEvents = events.map((event) => ({
-    id: event.id.toString(),
-    title: event.title,
-    start: event.startDate,
-    end: event.endDate,
-    backgroundColor: event.color,
-    borderColor: event.color,
-    extendedProps: event,
-  }));
+  const calendarEvents = events.map((event) => {
+    const isOwner = event.user?.id === currentUserId;
+    const isInvited = !isOwner;
+
+    // Encontrar se o usuário tem permissão de edição
+    const userInvite = event.invites?.find(inv => inv.userId === currentUserId);
+    const canEdit = userInvite?.canEdit || false;
+
+    return {
+      id: event.id.toString(),
+      title: `${event.title}`,
+      start: event.startDate,
+      end: event.endDate,
+      backgroundColor: event.color,
+      borderColor: event.color,
+      extendedProps: event,
+      // Adiciona borda diferente para eventos onde o usuário é convidado
+      ...(isInvited && { borderColor: '#666', borderWidth: '2px', borderStyle: 'dashed' }),
+    };
+  });
 
   // Configurações responsivas
   const getHeaderToolbar = () => {

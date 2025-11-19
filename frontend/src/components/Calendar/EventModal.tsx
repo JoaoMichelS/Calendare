@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
@@ -16,9 +16,13 @@ import {
   Switch,
   useTheme,
   useMediaQuery,
+  Divider,
 } from '@mui/material';
 import { Close as CloseIcon, Delete as DeleteIcon } from '@mui/icons-material';
 import type { Event, CreateEventData, UpdateEventData } from '../../types/event';
+import EventInvites from './EventInvites';
+import InviteInput from './InviteInput';
+import { useAuth } from '../../contexts/AuthContext';
 
 const schema = yup.object({
   title: yup.string().required('Título é obrigatório'),
@@ -35,7 +39,7 @@ interface EventModalProps {
   onClose: () => void;
   event: Event | null;
   initialDates: { start: Date; end: Date } | null;
-  onCreate: (data: CreateEventData) => Promise<void>;
+  onCreate: (data: CreateEventData, inviteEmails?: string[], canEdit?: boolean) => Promise<void>;
   onUpdate: (id: number, data: UpdateEventData) => Promise<void>;
   onDelete: (id: number) => Promise<void>;
 }
@@ -52,6 +56,12 @@ export default function EventModal({
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const isEdit = !!event;
+  const { user } = useAuth();
+  const isOwner = event?.user?.id === user?.id;
+
+  // States para convites na criação
+  const [inviteEmails, setInviteEmails] = useState('');
+  const [inviteCanEdit, setInviteCanEdit] = useState(false);
 
   const {
     control,
@@ -115,9 +125,17 @@ export default function EventModal({
       if (isEdit && event) {
         await onUpdate(event.id, eventData);
       } else {
-        await onCreate(eventData);
+        // Parse emails se houver
+        const emails = inviteEmails
+          .split(/[,;\s]+/)
+          .map((email) => email.trim())
+          .filter((email) => email.length > 0);
+
+        await onCreate(eventData, emails.length > 0 ? emails : undefined, inviteCanEdit);
       }
       reset();
+      setInviteEmails('');
+      setInviteCanEdit(false);
     } catch (error) {
       console.error('Error saving event:', error);
     }
@@ -153,8 +171,9 @@ export default function EventModal({
       </DialogTitle>
 
       <form onSubmit={handleSubmit(onSubmit)}>
-        <DialogContent>
-          <Grid container spacing={2}>
+        <DialogContent dividers>
+          <Grid container spacing={3}>
+            {/* Informações Básicas */}
             <Grid item xs={12}>
               <Controller
                 name="title"
@@ -162,7 +181,7 @@ export default function EventModal({
                 render={({ field }) => (
                   <TextField
                     {...field}
-                    label="Título"
+                    label="Título do Evento"
                     fullWidth
                     error={!!errors.title}
                     helperText={errors.title?.message}
@@ -172,14 +191,15 @@ export default function EventModal({
               />
             </Grid>
 
-            <Grid item xs={12}>
+            {/* Data e Hora */}
+            <Grid item xs={12} sm={6}>
               <Controller
                 name="startDate"
                 control={control}
                 render={({ field }) => (
                   <TextField
                     {...field}
-                    label="Início"
+                    label="Data e Hora de Início"
                     type="datetime-local"
                     fullWidth
                     InputLabelProps={{ shrink: true }}
@@ -190,14 +210,14 @@ export default function EventModal({
               />
             </Grid>
 
-            <Grid item xs={12}>
+            <Grid item xs={12} sm={6}>
               <Controller
                 name="endDate"
                 control={control}
                 render={({ field }) => (
                   <TextField
                     {...field}
-                    label="Fim"
+                    label="Data e Hora de Término"
                     type="datetime-local"
                     fullWidth
                     InputLabelProps={{ shrink: true }}
@@ -208,6 +228,7 @@ export default function EventModal({
               />
             </Grid>
 
+            {/* Descrição */}
             <Grid item xs={12}>
               <Controller
                 name="description"
@@ -219,11 +240,13 @@ export default function EventModal({
                     fullWidth
                     multiline
                     rows={3}
+                    placeholder="Adicione detalhes sobre o evento..."
                   />
                 )}
               />
             </Grid>
 
+            {/* Localização */}
             <Grid item xs={12}>
               <Controller
                 name="location"
@@ -233,11 +256,13 @@ export default function EventModal({
                     {...field}
                     label="Localização"
                     fullWidth
+                    placeholder="Ex: Sala de Reuniões, Endereço..."
                   />
                 )}
               />
             </Grid>
 
+            {/* Opções */}
             <Grid item xs={12} sm={6}>
               <Controller
                 name="color"
@@ -245,7 +270,7 @@ export default function EventModal({
                 render={({ field }) => (
                   <TextField
                     {...field}
-                    label="Cor"
+                    label="Cor do Evento"
                     type="color"
                     fullWidth
                   />
@@ -253,7 +278,7 @@ export default function EventModal({
               />
             </Grid>
 
-            <Grid item xs={12} sm={6}>
+            <Grid item xs={12} sm={6} display="flex" alignItems="center">
               <Controller
                 name="isRecurring"
                 control={control}
@@ -265,7 +290,32 @@ export default function EventModal({
                 )}
               />
             </Grid>
+
+            {/* Convites - Apenas na Criação */}
+            {!isEdit && (
+              <>
+                <Grid item xs={12}>
+                  <Divider sx={{ my: 1 }} />
+                </Grid>
+                <Grid item xs={12}>
+                  <InviteInput
+                    emails={inviteEmails}
+                    onEmailsChange={setInviteEmails}
+                    canEdit={inviteCanEdit}
+                    onCanEditChange={setInviteCanEdit}
+                  />
+                </Grid>
+              </>
+            )}
           </Grid>
+
+          {/* Gerenciar Convites - Apenas na Edição */}
+          {isEdit && event && (
+            <Box mt={3}>
+              <Divider sx={{ mb: 3 }} />
+              <EventInvites eventId={event.id} isOwner={isOwner} />
+            </Box>
+          )}
         </DialogContent>
 
         <DialogActions sx={{ px: 3, pb: 2 }}>

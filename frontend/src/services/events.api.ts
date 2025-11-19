@@ -32,13 +32,31 @@ export const eventsApi = {
   },
 
   // Convidar usuários
-  inviteUsers: async (eventId: number, userIds: number[]): Promise<any> => {
-    const response = await api.post(`/events/${eventId}/invite`, { userIds });
+  inviteUsers: async (eventId: number, emails: string[], canEdit?: boolean): Promise<any> => {
+    const response = await api.post(`/events/${eventId}/invite`, { emails, canEdit });
     return response.data;
   },
 
   // Remover convite
   removeInvite: async (eventId: number, userId: number): Promise<void> => {
     await api.delete(`/events/${eventId}/invite/${userId}`);
+  },
+
+  // Responder a convite
+  respondToInvite: async (eventId: number, status: 'ACCEPTED' | 'DECLINED'): Promise<any> => {
+    const response = await api.patch(`/events/${eventId}/invite/respond`, { status });
+    return response.data;
+  },
+
+  // Listar convites pendentes
+  getPendingInvites: async (): Promise<any[]> => {
+    const response = await api.get('/events/invites/pending');
+    return response.data;
+  },
+
+  // Listar convites de um evento
+  getEventInvites: async (eventId: number): Promise<any[]> => {
+    const response = await api.get(`/events/${eventId}/invites`);
+    return response.data;
   },
 };
