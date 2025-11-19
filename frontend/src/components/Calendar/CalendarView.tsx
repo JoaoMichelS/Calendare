@@ -11,6 +11,7 @@ interface CalendarViewProps {
   onDateSelect: (start: Date, end: Date) => void;
   onEventClick: (event: Event) => void;
   onDatesSet: (info: { start: Date; end: Date }) => void;
+  onEventChange?: (eventId: number, start: Date, end: Date) => void;
   currentUserId?: number;
 }
 
@@ -19,6 +20,7 @@ export default function CalendarView({
   onDateSelect,
   onEventClick,
   onDatesSet,
+  onEventChange,
   currentUserId,
 }: CalendarViewProps) {
   const theme = useTheme();
@@ -134,7 +136,16 @@ export default function CalendarView({
           onEventClick(info.event.extendedProps as Event);
         }}
         eventDrop={(info) => {
-          console.log('Teste Drag and Drop:', info);
+          if (onEventChange && info.event.start && info.event.end) {
+            const eventId = parseInt(info.event.id);
+            onEventChange(eventId, info.event.start, info.event.end);
+          }
+        }}
+        eventResize={(info) => {
+          if (onEventChange && info.event.start && info.event.end) {
+            const eventId = parseInt(info.event.id);
+            onEventChange(eventId, info.event.start, info.event.end);
+          }
         }}
         datesSet={(info) => {
           onDatesSet({ start: info.start, end: info.end });

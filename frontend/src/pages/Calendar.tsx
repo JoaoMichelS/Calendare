@@ -135,6 +135,20 @@ export default function Calendar() {
     }
   };
 
+  const handleEventChange = async (eventId: number, start: Date, end: Date) => {
+    try {
+      await eventsApi.update(eventId, {
+        startDate: start.toISOString(),
+        endDate: end.toISOString(),
+      });
+      setSuccess('Evento atualizado!');
+      loadEvents();
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Erro ao atualizar evento');
+      loadEvents();
+    }
+  };
+
   return (
     <Container
       maxWidth="lg"
@@ -174,6 +188,7 @@ export default function Calendar() {
             onDateSelect={handleDateSelect}
             onEventClick={handleEventClick}
             onDatesSet={(info) => loadEvents(info.start, info.end)}
+            onEventChange={handleEventChange}
             currentUserId={user?.id}
           />
         )}
