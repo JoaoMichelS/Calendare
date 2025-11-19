@@ -86,8 +86,8 @@ export default function EventModal({
       reset({
         title: event.title,
         description: event.description || '',
-        startDate: event.startDate.slice(0, 16),
-        endDate: event.endDate.slice(0, 16),
+        startDate: formatDateForInput(new Date(event.startDate)),
+        endDate: formatDateForInput(new Date(event.endDate)),
         location: event.location || '',
         color: event.color,
         isRecurring: event.isRecurring,
